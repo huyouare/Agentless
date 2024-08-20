@@ -160,6 +160,9 @@ cython_debug/
 #  nuclear option because steven uses PyCharm.
 .idea/
 
+# Mac
+.DS_Store
+
 # some project specific stuff
 
 /get_repo_structure/astropy
