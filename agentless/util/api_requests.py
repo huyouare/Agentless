@@ -1,8 +1,9 @@
 import time
 from typing import Dict, Union
-
 import openai
 import tiktoken
+import os
+from openai import AzureOpenAI
 
 
 def num_tokens_from_messages(message, model="gpt-3.5-turbo-0301"):
@@ -53,6 +54,53 @@ def handler(signum, frame):
     # swallow signum and frame
     raise Exception("end of time")
 
+
+def request_azure_openai_engine(config, logger, max_retries=5):
+    ret = None
+    retries = 0
+
+    client = AzureOpenAI(
+        api_key=os.getenv("AZURE_OPENAI_API_KEY"),  
+        api_version="2024-02-01",
+        azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+    )
+
+    while ret is None and retries < max_retries:
+        try:
+            # Attempt to get the completion
+            logger.info("Creating API request")
+
+            ret = client.chat.completions.create(**config)
+
+        except openai.OpenAIError as e:
+            if isinstance(e, openai.BadRequestError):
+                logger.info("Request invalid")
+                print(e)
+                logger.info(e)
+                raise Exception("Invalid API Request")
+            elif isinstance(e, openai.RateLimitError):
+                print("Rate limit exceeded. Waiting...")
+                logger.info("Rate limit exceeded. Waiting...")
+                print(e)
+                logger.info(e)
+                time.sleep(5)
+            elif isinstance(e, openai.APIConnectionError):
+                print("API connection error. Waiting...")
+                logger.info("API connection error. Waiting...")
+                print(e)
+                logger.info(e)
+                time.sleep(5)
+            else:
+                print("Unknown error. Waiting...")
+                logger.info("Unknown error. Waiting...")
+                print(e)
+                logger.info(e)
+                time.sleep(1)
+
+        retries += 1
+
+    logger.info(f"API response {ret}")
+    return ret
 
 def request_chatgpt_engine(config, logger, base_url=None, max_retries=40, timeout=100):
     ret = None

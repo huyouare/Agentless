@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List
 
-from agentless.util.api_requests import create_chatgpt_config, request_chatgpt_engine
+from agentless.util.api_requests import create_chatgpt_config, request_chatgpt_engine, request_azure_openai_engine
 
 
 class DecoderBase(ABC):
@@ -36,8 +36,14 @@ class DecoderBase(ABC):
 
 
 class OpenAIChatDecoder(DecoderBase):
-    def __init__(self, name: str, logger, **kwargs) -> None:
+    def __init__(self, name: str, backend: str, logger, **kwargs) -> None:
         super().__init__(name, logger, **kwargs)
+        if backend == "openai":
+            self.engine = request_chatgpt_engine
+        elif backend == "azure":
+            self.engine = request_azure_openai_engine
+        else:
+            raise ValueError(f"Unsupported backend: {backend}")
 
     def codegen(self, message: str, num_samples: int = 1) -> List[dict]:
         if self.temperature == 0:
@@ -51,7 +57,7 @@ class OpenAIChatDecoder(DecoderBase):
             batch_size=batch_size,
             model=self.name,
         )
-        ret = request_chatgpt_engine(config, self.logger)
+        ret = self.engine(config, self.logger)
         if ret:
             responses = [choice.message.content for choice in ret.choices]
             completion_tokens = ret.usage.completion_tokens
@@ -147,9 +153,10 @@ def make_model(
     max_tokens: int = 1024,
     temperature: float = 0.0,
 ):
-    if backend == "openai":
+    if backend == "openai" or backend == "azure":
         return OpenAIChatDecoder(
             name=model,
+            backend=backend,
             logger=logger,
             batch_size=batch_size,
             max_new_tokens=max_tokens,
