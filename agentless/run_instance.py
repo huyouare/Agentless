@@ -87,7 +87,7 @@ def main():
     parser.add_argument("--output_folder", type=str, required=True, help="Folder to save output files")
     parser.add_argument("--output_file", type=str, default="loc_outputs.jsonl")
     parser.add_argument("--model", type=str, default="gpt-4o-mini-2024-07-18", choices=["gpt-4o-2024-05-13", "deepseek-coder", "gpt-4o-mini-2024-07-18"], help="Model to use for processing")
-    parser.add_argument("--backend", type=str, default="openai", choices=["openai", "deepseek"], help="Backend to use for API calls")
+    parser.add_argument("--backend", type=str, default="openai", choices=["openai", "deepseek", "anthropic"], help="Backend to use for API calls")
     parser.add_argument("--mock", action="store_true", help="Run in mock mode without making actual API calls")
     
     # Add other common arguments from localize.py, repair.py, and rerank.py

@@ -327,9 +327,11 @@ def main():
         type=str,
         default="gpt-4o-2024-05-13",
         choices=["gpt-4o-2024-05-13", "deepseek-coder", "gpt-4o-mini-2024-07-18"],
+        choices=["gpt-4o-2024-05-13", "deepseek-coder", "gpt-4o-mini-2024-07-18", "claude-3-5-sonnet@20240620"],
     )
     parser.add_argument(
         "--backend", type=str, default="openai", choices=["openai", "deepseek"]
+        "--backend", type=str, default="openai", choices=["openai", "deepseek", "anthropic"]
     )
 
     args = parser.parse_args()

@@ -133,11 +133,11 @@ def request_anthropic_engine(client, config, logger, max_retries=40, timeout=100
     ret = None
     retries = 0
 
+    start_time = time.time()
     while ret is None and retries < max_retries:
         try:
-            start_time = time.time()
             ret = client.messages.create(**config)
-        except Exception as e:
+        except Exception:
             logger.error("Unknown error. Waiting...", exc_info=True)
             # Check if the timeout has been exceeded
             if time.time() - start_time >= timeout:
@@ -148,3 +148,10 @@ def request_anthropic_engine(client, config, logger, max_retries=40, timeout=100
         retries += 1
 
     return ret
+
+
+def create_anthropic_client():
+    from anthropic import AnthropicVertex
+    LOCATION="europe-west1"
+    project_id="pro-bruin-431604-u3"
+    return AnthropicVertex(region=LOCATION, project_id=project_id)
