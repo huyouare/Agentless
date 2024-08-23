@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import List
 
-from agentless.util.api_requests import create_chatgpt_config, request_chatgpt_engine, request_azure_openai_engine
-
+from agentless.util.api_requests import create_anthropic_config, create_chatgpt_config, request_chatgpt_engine, request_azure_openai_engine, request_anthropic_engine
+from anthropic import Anthropic, AnthropicVertex
+import os
 
 class DecoderBase(ABC):
     def __init__(
@@ -145,6 +146,58 @@ class DeepSeekChatDecoder(DecoderBase):
         return False
 
 
+class AnthropicChatDecoder(DecoderBase):
+    def __init__(self, name: str, backend: str, logger, **kwargs) -> None:
+        super().__init__(name, logger, **kwargs)
+        if backend == "anthropic":
+            self.client = Anthropic()
+        elif backend == "anthropic_gcp":
+            self.client = AnthropicVertex(project_id=os.environ["PROJECT_ID"], region="us-east5")
+        else:
+            raise ValueError(f"Unsupported backend: {backend}")
+
+    def codegen(self, message: str, num_samples: int = 1, system_message: str = "You are a helpful assistant.", prefill: str = "") -> List[dict]:
+        if self.temperature == 0:
+            assert num_samples == 1
+
+        trajs = []
+        for _ in range(num_samples):
+            config = create_anthropic_config(
+                system_message=system_message,
+                message=message,
+                prefill=prefill,
+                max_tokens=self.max_new_tokens,
+                temperature=self.temperature,
+                batch_size=1,
+                model=self.name,
+            )
+            ret = request_anthropic_engine(self.client,config, self.logger)
+            if ret:
+                trajs.append(
+                    {
+                        "response": ret.content[0].text,
+                        "usage": {
+                            "completion_tokens": ret.usage.output_tokens,
+                            "prompt_tokens": ret.usage.input_tokens,
+                        },
+                    }
+                )
+            else:
+                trajs.append(
+                    {
+                        "response": "",
+                        "usage": {
+                            "completion_tokens": 0,
+                            "prompt_tokens": 0,
+                        },
+                    }
+                )
+
+        return trajs
+
+    def is_direct_completion(self) -> bool:
+        return False
+
 def make_model(
     model: str,
     backend: str,
@@ -165,6 +218,15 @@ def make_model(
     elif backend == "deepseek":
         return DeepSeekChatDecoder(
             name=model,
+            logger=logger,
+            batch_size=batch_size,
+            max_new_tokens=max_tokens,
+            temperature=temperature,
+        )
+    elif backend == "anthropic" or backend == "anthropic_gcp":
+        return AnthropicChatDecoder(
+            name=model,
+            backend=backend,
             logger=logger,
             batch_size=batch_size,
             max_new_tokens=max_tokens,

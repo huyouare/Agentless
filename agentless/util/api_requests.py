@@ -148,12 +148,12 @@ def request_chatgpt_engine(config, logger, base_url=None, max_retries=40, timeou
 
 def create_anthropic_config(
     message: str,
-    prefill_message: str,
+    prefill: str,
     max_tokens: int,
     temperature: float = 1,
     batch_size: int = 1,
     system_message: str = "You are a helpful assistant.",
-    model: str = "claude-2.1",
+    model: str = "claude-3-5-sonnet@20240620",
 ) -> Dict:
     if isinstance(message, list):
         config = {
@@ -171,7 +171,7 @@ def create_anthropic_config(
             "system": system_message,
             "messages": [
                 {"role": "user", "content": message},
-                {"role": "assistant", "content": prefill_message},
+                {"role": "assistant", "content": prefill},
             ],
         }
     return config
